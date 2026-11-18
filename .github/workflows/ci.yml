@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax
+        run: |
+          for f in *.sh scripts/*.sh; do
+            bash -n "$f"
+          done
+      - name: Embedded Python syntax
+        run: |
+          python3 - <<'PY'
+          import ast, glob, re
+          files = sorted(glob.glob("*.sh") + glob.glob("scripts/*.sh"))
+          for fn in files:
+              txt = open(fn).read()
+              for m in re.finditer(r"<<'PY'[^\n]*\n(.*?)\nPY", txt, re.S):
+                  ast.parse(m.group(1), filename=fn)
+          PY
